@@ -1,8 +1,8 @@
 #include "app.h"
 
 int 
-main(void)
-{
+main(void){
+
     printf("ok\n");
     return 0;
 }
