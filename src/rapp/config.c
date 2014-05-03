@@ -16,6 +16,8 @@ void
 initServerConfig(void) {
     
     app_server.verbosity = APP_WARNING;
+
+    app_server.logfile = NULL;
   
     app_server.bug_report_start = 0;
 

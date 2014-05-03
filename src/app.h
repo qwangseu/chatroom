@@ -5,6 +5,7 @@
 
 #include "rapp/config.h"
 #include "rapp/log.h"
+#include "rapp/socket_server.h"
 
 struct appServer{
    

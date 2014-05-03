@@ -11,6 +11,8 @@ INSTDIR = ./out
 # Options for release
 # CFLAGS = -O -Wall -std=c99 -pedantic 
 
+THREAD = -D_REENTRANT  -lpthread
+
 vpath % rapp
 vpath % unit-test
 
@@ -23,7 +25,7 @@ APP_O  = $(patsubst %.c,%.o,$(APP_C))
 APP    = $(patsubst %.c,%,$(APP_C))
 
 app: app.o $(LIB)
-	$(CC) $(CFLAGS) -o app app.o $(LIB)
+	$(CC) $(CFLAGS) -o app app.o $(LIB) $(THREAD)
 
 $(LIB): $(LIB)(debug.o $(APP_O))
 app.o: app.c
@@ -39,7 +41,7 @@ TEST    = $(patsubst %.c,%,$(TEST_C))
 utest: $(TEST)
 
 %_test: %_test.o $(LIB)
-	$(CC) $(CFLAGS) -o $@ $<  $(LIB)
+	$(CC) $(CFLAGS) -o $@ $<  $(LIB) $(THREAD)
 %_test.o: %_test.c
 
 

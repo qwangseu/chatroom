@@ -16,7 +16,7 @@ sp_invalid(int efd) {
 }
 
 static int
-sp_create() {
+sp_create(void) {
     return epoll_create(1024);
 }
 
@@ -37,16 +37,16 @@ sp_add(int efd, int sock, void *ud) {
 }
 
 static void 
-sp_del(int efd, int sock) {
-    epoll_ctl(efd, EPOLL_CTL_DEL, sock , NULL);
-}
-
-static void 
 sp_write(int efd, int sock, void *ud, bool enable) {
     struct epoll_event ev;
     ev.events = EPOLLIN | (enable ? EPOLLOUT : 0);
     ev.data.ptr = ud;
     epoll_ctl(efd, EPOLL_CTL_MOD, sock, &ev);
+}
+
+static void 
+sp_del(int efd, int sock) {
+    epoll_ctl(efd, EPOLL_CTL_DEL, sock , NULL);
 }
 
 static int 
