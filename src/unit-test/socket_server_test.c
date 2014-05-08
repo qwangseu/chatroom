@@ -43,10 +43,10 @@ test_by_phoneli(struct socket_server *ss) {
     socket_server_start(ss,201,l);
 
     int i;
-    for (i=0;i<1;i++) {
+    for (i=0;i<0;i++) {
         socket_server_connect(ss, 400+i, "127.0.0.1", 8888);
     }
-    sleep(3);
+    sleep(5);
     
     char * p = malloc(6);
     strncpy(p , "hello" , 5);

@@ -400,8 +400,8 @@ send_socket(struct socket_server *ss, struct request_send * request, struct sock
     int id = request->id;
     struct socket * s = &ss->slot[id % MAX_SOCKET];
     if (s->type == SOCKET_TYPE_INVALID || s->id != id 
-        || s->type == SOCKET_TYPE_HALFCLOSE
-        || s->type == SOCKET_TYPE_PACCEPT) {
+        || s->type == SOCKET_TYPE_HALFCLOSE){
+        //        || s->type == SOCKET_TYPE_PACCEPT) {
         FREE(request->buffer);
         return -1;
     }
@@ -484,26 +484,6 @@ close_socket(struct socket_server *ss, struct request_close *request, struct soc
     return -1;
 }
 
-// corresponding "B" cmd : just add fd into epoll.(default is EPOLLIN)
-/*
-static int
-bind_socket(struct socket_server *ss, struct request_bind *request, struct socket_message *result) {
-    int id = request->id;
-    result->id = id;
-    result->opaque = request->opaque;
-    result->ud = 0;
-    struct socket *s = new_fd(ss, id, request->fd, request->opaque, true);
-    if (s == NULL) {
-        result->data = NULL;
-        return SOCKET_ERROR;
-    }
-    sp_nonblocking(request->fd);
-    s->type = SOCKET_TYPE_BIND;
-    result->data = "binding";
-    return SOCKET_OPEN;
-}
-*/
-
 // corresponding "S" cmd
 static int
 start_socket(struct socket_server *ss, struct request_start *request, struct socket_message *result) {
@@ -575,10 +555,6 @@ ctrl_cmd(struct socket_server *ss, struct socket_message *result) {
     switch (type) {
     case 'S':
         return start_socket(ss,(struct request_start *)buffer, result);
-        /*
-    case 'B':
-        return bind_socket(ss,(struct request_bind *)buffer, result);
-        */
     case 'L':
         return listen_socket(ss,(struct request_listen *)buffer, result);
     case 'K':
@@ -694,7 +670,6 @@ report_accept(struct socket_server *ss, struct socket *s, struct socket_message 
     socket_keepalive(client_fd);
     sp_nonblocking(client_fd);
     struct socket *ns = new_fd(ss, id, client_fd, s->opaque, false);
-    //change false to true which need to redefine SOCKET_TYPE_PACCEPT
     if (ns == NULL) {
         close(client_fd);
         return 0;
@@ -913,19 +888,6 @@ socket_server_listen(struct socket_server *ss, uintptr_t opaque, const char * ad
     send_request(ss, &request, 'L', sizeof(request.u.listen));
     return id;
 }
-
-/* for do a simple test
-int
-socket_server_bind(struct socket_server *ss, uintptr_t opaque, int fd) {
-    struct request_package request;
-    int id = reserve_id(ss);
-    request.u.bind.opaque = opaque;
-    request.u.bind.id = id;
-    request.u.bind.fd = fd;
-    send_request(ss, &request, 'B', sizeof(request.u.bind));
-    return id;
-}
-*/
 
 void 
 socket_server_start(struct socket_server *ss, uintptr_t opaque, int id) {
