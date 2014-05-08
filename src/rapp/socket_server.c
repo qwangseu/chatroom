@@ -693,7 +693,8 @@ report_accept(struct socket_server *ss, struct socket *s, struct socket_message 
     }
     socket_keepalive(client_fd);
     sp_nonblocking(client_fd);
-    struct socket *ns = new_fd(ss, id, client_fd, s->opaque, true);
+    struct socket *ns = new_fd(ss, id, client_fd, s->opaque, false);
+    //change false to true which need to redefine SOCKET_TYPE_PACCEPT
     if (ns == NULL) {
         close(client_fd);
         return 0;

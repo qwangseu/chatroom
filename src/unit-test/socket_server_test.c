@@ -46,7 +46,13 @@ test_by_phoneli(struct socket_server *ss) {
     for (i=0;i<1;i++) {
         socket_server_connect(ss, 400+i, "127.0.0.1", 8888);
     }
-    sleep(10);
+    sleep(3);
+    
+    char * p = malloc(6);
+    strncpy(p , "hello" , 5);
+    p[5] = '\0';
+    socket_server_send(ss , 2 , p , 6);
+    sleep(3);
     
     socket_server_exit(ss);
 
