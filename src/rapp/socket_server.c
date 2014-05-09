@@ -669,7 +669,8 @@ report_accept(struct socket_server *ss, struct socket *s, struct socket_message 
     }
     socket_keepalive(client_fd);
     sp_nonblocking(client_fd);
-    struct socket *ns = new_fd(ss, id, client_fd, s->opaque, false);
+    struct socket *ns = new_fd(ss, id, client_fd, s->opaque, true);
+    // the changing  that false change to true is dangerous
     if (ns == NULL) {
         close(client_fd);
         return 0;
@@ -820,7 +821,8 @@ socket_server_send(struct socket_server *ss, int id, const void * buffer, int sz
     struct request_package request;
     request.u.send.id = id;
     request.u.send.sz = sz;
-    request.u.send.buffer = (char *)buffer;
+    request.u.send.buffer = malloc(sizeof(char) * sz);
+    strncpy(request.u.send.buffer , buffer , sizeof(char) * sz);
 
     send_request(ss, &request, 'D', sizeof(request.u.send));
     return s->wb_size;
