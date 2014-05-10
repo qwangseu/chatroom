@@ -670,12 +670,12 @@ report_accept(struct socket_server *ss, struct socket *s, struct socket_message 
     socket_keepalive(client_fd);
     sp_nonblocking(client_fd);
     struct socket *ns = new_fd(ss, id, client_fd, s->opaque, true);
-    // the changing  that false change to true is dangerous
+    //false-to-SOCKET_TYPE_PACCEPT ; true-to-SOCKET_TYPE_CONNECTED
     if (ns == NULL) {
         close(client_fd);
         return 0;
     }
-    ns->type = SOCKET_TYPE_PACCEPT;
+    ns->type = SOCKET_TYPE_CONNECTED;
     result->opaque = s->opaque;
     result->id = s->id;
     result->ud = id;
