@@ -49,6 +49,8 @@ struct socket {
 struct socket_server {
     int recvctrl_fd;  //pipe() => fd[0]:用于给客户输入命令
     int sendctrl_fd;  //pipe() => fd[1]:发送命令给内部，以实现对应指令操作
+    int pipe_cur;      //管道里面数据的大小
+    int pipe_max;      //管道最大值
     int checkctrl;    //default == 1,using in poll-function to handle events.
     poll_fd event_fd; //efd = sp_create() = epoll_create(1024);
     int alloc_id;     //one id per open_request,alloc_id = id_sum
@@ -223,6 +225,8 @@ socket_server_create(void) {
     ss->event_fd = efd;
     ss->recvctrl_fd = fd[0];
     ss->sendctrl_fd = fd[1];
+    ss->pipe_cur = 0;
+    ss->pipe_max = 1024 * 4;
     ss->checkctrl = 1;
 
     for (i=0;i<MAX_SOCKET;i++) {
@@ -511,7 +515,7 @@ start_socket(struct socket_server *ss, struct request_start *request, struct soc
 
 //read request_package from pipe.
 static void
-block_readpipe(int pipefd, void *buffer, int sz) {
+block_readpipe(struct socket_server * ss ,int pipefd, void *buffer, int sz) {
     for (;;) {
         int n = read(pipefd, buffer, sz);
         if (n<0) {
@@ -520,7 +524,8 @@ block_readpipe(int pipefd, void *buffer, int sz) {
             fprintf(stderr, "socket-server : read pipe error %s.",strerror(errno));
             return;
         }
-        // must atomic read from a pipe
+        ss->pipe_cur -= n;
+        // must atomic read from a pipe        
         assert(n == sz);
         return;
     }
@@ -547,10 +552,10 @@ ctrl_cmd(struct socket_server *ss, struct socket_message *result) {
     // the length of message is one byte, so 256+8 buffer size is enough.
     uint8_t buffer[256];
     uint8_t header[2];
-    block_readpipe(fd, header, sizeof(header));
+    block_readpipe(ss , fd , header, sizeof(header));
     int type = header[0];
     int len = header[1];
-    block_readpipe(fd, buffer, len);
+    block_readpipe(ss , fd , buffer, len);
     // ctrl command only exist in local fd, so don't worry about endian.
     switch (type) {
     case 'S':
@@ -724,7 +729,7 @@ socket_server_poll(struct socket_server *ss, struct socket_message * result, int
             // dispatch pipe message at beginning
             continue;
         }
-        printf("<<<id : %d  fd : %d  type : %d  w : %d  r : %d>>>\n" , s->id , s->fd , s->type , e->write , e->read);
+        //printf("<<<id : %d  fd : %d  type : %d  w : %d  r : %d>>>\n" , s->id , s->fd , s->type , e->write , e->read);
         switch (s->type) {
         case SOCKET_TYPE_CONNECTING:
             return report_connect(ss, s, result);
@@ -756,16 +761,20 @@ socket_server_poll(struct socket_server *ss, struct socket_message * result, int
 
 static void
 send_request(struct socket_server *ss, struct request_package *request, char type, int len) {
+    //    pipe_online_gc(ss);
+        
     request->header[6] = (uint8_t)type;
     request->header[7] = (uint8_t)len;
     for (;;) {
-        int n = write(ss->sendctrl_fd, &request->header[6], len+2);
+        //lots of data which write to pipe , can lead to block-event of pipe.
+        int n = write(ss->sendctrl_fd, &request->header[6], len+2);        
         if (n<0) {
             if (errno != EINTR) {
                 fprintf(stderr, "socket-server : send ctrl command error %s.\n", strerror(errno));
             }
             continue;
         }
+        ss->pipe_cur += n;
         assert(n == len+2);
         return;
     }
@@ -823,7 +832,7 @@ socket_server_send(struct socket_server *ss, int id, const void * buffer, int sz
     request.u.send.sz = sz;
     request.u.send.buffer = malloc(sizeof(char) * sz);
     strncpy(request.u.send.buffer , buffer , sizeof(char) * sz);
-
+    
     send_request(ss, &request, 'D', sizeof(request.u.send));
     return s->wb_size;
 }
@@ -898,3 +907,38 @@ socket_server_start(struct socket_server *ss, uintptr_t opaque, int id) {
     request.u.start.opaque = opaque;
     send_request(ss, &request, 'S', sizeof(request.u.start));
 }
+
+int
+socket_server_online_gc(struct socket_server *ss){
+    printf("pipe_cur : %d --------- pipe_max : %d\n" , ss->pipe_cur , ss->pipe_max);
+    if(ss->pipe_cur < ss->pipe_max)
+        return 0;    
+    printf("online_gc running...\n");
+    struct  socket_message dummy;
+    int type;
+    for (;;) {
+        if (has_cmd(ss)) {
+        type = ctrl_cmd(ss, &dummy);
+        if (type != -1)
+            break;
+        else
+            continue;
+        } else {
+            break;
+        }
+    }
+    return 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

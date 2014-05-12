@@ -7,14 +7,15 @@ initServer(void){
 }
 
 int
-socket_data_handle(struct socket_message * result){
+socket_data_handle(struct socket_server *ss , struct socket_message * result){
     int used = client_fdset->used,
         i = 0,
         id = 0;
     for(i = 0;i < used ; i++){
-        id = client_fdset->set[i];
-        if(likely(id != result->id))
-            socket_server_send(global_ss , id , result->data , result->ud);
+        id = client_fdset->set[i];                
+        socket_server_online_gc(ss);
+        if(likely(id != result->id))            
+            socket_server_send(global_ss , id , result->data , result->ud);        
     }
     return 0;
 }
@@ -47,7 +48,7 @@ loopPoll(void * ud){
             return NULL;
         case SOCKET_DATA:
             printf("message(%lu) [id=%d] size=%d %s\n",result.opaque,result.id, result.ud , result.data);
-            if(socket_data_handle(&result) != 0)
+            if(socket_data_handle(ss , &result) != 0)
                 appLog(APP_WARNING ,"error(%lu) [type:SOCKET_DATA] [id=%d] size=%d %s\n",result.opaque,result.id);                
             free(result.data);
             break;
