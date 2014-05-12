@@ -36,4 +36,16 @@ int socket_server_connect(struct socket_server *, uintptr_t opaque, const char *
 
 int socket_server_block_connect(struct socket_server *, uintptr_t opaque, const char * addr, int port);
 
+int socket_server_online_gc(struct socket_server *ss);
+
 #endif
+
+
+
+
+
+
+
+
+
+
