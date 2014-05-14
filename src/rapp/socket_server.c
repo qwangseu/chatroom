@@ -226,7 +226,7 @@ socket_server_create(void) {
     ss->recvctrl_fd = fd[0];
     ss->sendctrl_fd = fd[1];
     ss->pipe_cur = 0;
-    ss->pipe_max = 1024 * 4;
+    ss->pipe_max = 1024 * 40;
     ss->checkctrl = 1;
 
     for (i=0;i<MAX_SOCKET;i++) {
