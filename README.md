@@ -7,7 +7,6 @@
 
 *  思路（参考网上一些文章和某些前辈的源码）
     *  使用io多路复用技术实现（select ， epoll 结合使用）。
-    *  online-gc 解决 pipe管道 写爆问题。
 
 
 # simple benchmark
